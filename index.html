@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b18">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Akun Game">
+<title>Akun Game</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<style>
+  :root{
+    --bg:#0b0b18;--ink:#f4f4fb;--muted:#8f8fb0;
+    --card:rgba(255,255,255,.055);--card2:rgba(255,255,255,.1);--line:rgba(255,255,255,.09);
+    --a:#7c5cff;--b:#2de2c4;--c:#ff6ba6;--y:#facc15;--g:#4ade80;
+    --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
+  html,body{height:100%;background:var(--bg)}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);overflow:hidden}
+  button,input,textarea{font:inherit;color:inherit;border:0;outline:none;background:none}
+  input{width:100%}
+  .muted{color:var(--muted)}
+
+  /* splash saat app dibuka */
+  #splash{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;transition:opacity .7s var(--ease),visibility .7s}
+  #splash.gone{opacity:0;visibility:hidden}
+  #splash .delta{font-size:84px;font-weight:200;line-height:1;background:linear-gradient(120deg,var(--a),var(--b),var(--c),var(--a));
+    background-size:300% 300%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 4s linear infinite,breathe 2.4s ease-in-out infinite}
+  @keyframes sheen{from{background-position:0% 50%}to{background-position:300% 50%}}
+  @keyframes breathe{0%,100%{opacity:.7}50%{opacity:1}}
+
+  /* latar selalu bergerak */
+  #bgc{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+  .aurora{position:fixed;inset:-30vmax;z-index:0;pointer-events:none;filter:blur(90px);opacity:.32;
+    background:conic-gradient(from 0deg,var(--a),var(--b),var(--c),var(--y),var(--a));animation:spin 38s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* tampilan layar: halaman penuh, satu animasi masuk, tanpa pop up */
+  #app{position:fixed;inset:0;z-index:1}
+  .view{position:absolute;inset:0;display:none;overflow-y:auto;max-width:760px;margin:0 auto;
+    padding:calc(env(safe-area-inset-top) + 16px) 18px calc(env(safe-area-inset-bottom) + 56px)}
+  .view.on{display:block;animation:enter .42s var(--ease) both}
+  .view.on.rev{animation-name:enterRev}
+  #v-lock.on{display:flex;align-items:center;justify-content:center}
+  @keyframes enter{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+  @keyframes enterRev{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+  /* indikator simpan: bulatan kecil di bawah, selalu terlihat */
+  #dot{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);width:12px;height:12px;margin-left:-6px;
+    border-radius:50%;z-index:6;background:#4a4a66;transition:background .6s var(--ease),box-shadow .6s var(--ease),transform .5s var(--spring)}
+  #dot.busy{background:conic-gradient(var(--a),var(--b),var(--c),var(--y),var(--a));animation:spin .9s linear infinite;
+    box-shadow:0 0 14px rgba(124,92,255,.55)}
+  #dot.ok{background:var(--g);box-shadow:0 0 14px rgba(74,222,128,.6)}
+  #dot.err{background:var(--c);box-shadow:0 0 16px rgba(255,107,166,.7);animation:pulse 1.1s ease-in-out infinite;cursor:pointer;pointer-events:auto}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+
+  /* kunci */
+  .lock{width:min(360px,100%);display:grid;gap:28px;justify-items:center;text-align:center}
+  .lock .delta{font-size:56px;font-weight:200;line-height:1;background:linear-gradient(120deg,var(--a),var(--b),var(--c),var(--a));
+    background-size:300% 300%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 5s linear infinite;margin-bottom:-6px}
+  .lock h2{font-size:13px;font-weight:500;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+  .bars{display:flex;gap:12px;height:20px;align-items:center}
+  .bars i{width:24px;height:2px;border-radius:2px;background:var(--card2);transition:background .3s,transform .35s var(--spring)}
+  .bars i.on{background:linear-gradient(90deg,var(--a),var(--b));transform:scaleY(2.4)}
+  .bars.shake{animation:shake .45s}
+  .keys{display:grid;grid-template-columns:repeat(3,84px);gap:12px 22px}
+  .keys button{height:84px;font-size:30px;font-weight:300;border-radius:26px;background:transparent;
+    transition:transform .18s var(--ease),background .25s}
+  .keys button:active{transform:scale(.9);background:var(--card2)}
+  .keys button.del{font-size:20px;color:var(--muted)}
+  .keys button.ghost{visibility:hidden}
+  .err{min-height:18px;font-size:13px;color:#ffb3d0}
+
+  /* bar atas */
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .top .t{flex:1;min-width:0}
+  .top h1{font-size:22px;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top small{display:block;color:var(--muted);font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ib{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--card);
+    border:1px solid var(--line);font-size:18px;cursor:pointer;flex:none;transition:transform .2s var(--ease)}
+  .ib:active{transform:scale(.9)}
+  .ib.sm{width:38px;height:38px;font-size:15px;border-radius:12px}
+
+  /* tombol & isian */
+  .btn{height:50px;padding:0 20px;border-radius:16px;font-weight:600;cursor:pointer;background:var(--card2);
+    display:inline-flex;align-items:center;justify-content:center;transition:transform .2s var(--spring)}
+  .btn:active{transform:scale(.96)}
+  .btn.main{background:linear-gradient(135deg,var(--a),var(--b));color:#fff;box-shadow:0 10px 26px rgba(124,92,255,.35)}
+  .btn.danger{color:#ffb3d0;background:rgba(255,107,166,.12)}
+  .btn.block{width:100%}
+  .btns{display:flex;gap:10px;margin-top:8px}
+  .btns .btn{flex:1}
+  .form{display:grid;gap:16px}
+  .fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+  .fld input{height:52px;padding:0 15px;border-radius:15px;background:var(--card);border:1px solid var(--line);
+    color:var(--ink);font-size:16px;transition:border-color .25s}
+  .fld input:focus{border-color:var(--a)}
+  .fld input[type=color]{padding:6px;height:52px}
+  .pwrow{display:flex;gap:8px;align-items:center}
+  .pwrow input{flex:1}
+  .prev{height:150px;border-radius:20px;overflow:hidden;display:grid;place-items:center;font-size:40px;font-weight:700;
+    background:linear-gradient(135deg,var(--c,#7c5cff),#17172e)}
+  .prev img{width:100%;height:100%;object-fit:cover}
+  .search{width:100%;height:48px;border-radius:15px;background:var(--card);border:1px solid var(--line);padding:0 15px;margin-bottom:14px;transition:border-color .25s}
+  .search:focus{border-color:var(--a)}
+  .hit{width:100%;display:grid;gap:3px;text-align:left;padding:13px 14px;border-radius:15px;background:var(--card);
+    border:1px solid var(--line);margin-bottom:8px;animation:pop .35s var(--ease) both}
+  .hit small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .add{margin-top:12px}
+
+  /* game */
+  .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .gcard{position:relative;text-align:left;border-radius:22px;background:var(--card);border:1px solid var(--line);
+    padding:10px;display:grid;gap:9px;cursor:pointer;animation:pop .55s var(--ease) both;
+    animation-delay:calc(var(--i,0) * 60ms);transition:transform .3s var(--ease)}
+  .gcard:active{transform:scale(.97)}
+  .thumb{aspect-ratio:4/3;border-radius:16px;overflow:hidden;display:grid;place-items:center;font-size:30px;font-weight:700;
+    background:linear-gradient(135deg,var(--c,#7c5cff),#17172e)}
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .gcard .nm{font-weight:600;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gcard small{padding:0 2px}
+  .gedit{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:10px;background:rgba(0,0,0,.45);
+    font-size:13px;display:grid;place-items:center}
+
+  /* kalender */
+  .wk,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .wk span{text-align:center;font-size:12px;color:var(--muted);padding:2px 0 6px}
+  .cell{position:relative;aspect-ratio:1;border-radius:15px;background:var(--card);border:1px solid var(--line);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;
+    animation:pop .45s var(--ease) both;animation-delay:calc(var(--i,0) * 14ms);transition:transform .2s var(--ease)}
+  .cell:active{transform:scale(.9)}
+  .cell.blank{background:none;border-color:transparent;pointer-events:none}
+  .cell .n{font-weight:600}
+  .cell.today{box-shadow:inset 0 0 0 2px var(--b)}
+  .cell .c{font-size:10px;color:var(--muted)}
+
+  /* detail tanggal: daftar akun */
+  .arow{display:grid;gap:10px;padding:13px 14px;border-radius:19px;background:var(--card);border:1px solid var(--line);
+    margin-bottom:10px;animation:enter .45s var(--ease) both;animation-delay:calc(var(--i,0) * 45ms)}
+  .line{display:flex;align-items:center;gap:6px;min-width:0}
+  .uname{flex:1;min-width:0;text-align:left;font-weight:600;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:4px 0;cursor:pointer}
+  .sub{display:flex;align-items:center;gap:10px}
+  .anote{flex:1;min-width:0;height:36px;border-radius:11px;background:rgba(255,255,255,.045);padding:0 11px;font-size:14px;
+    color:#dcdcf0;border:1px solid transparent;transition:border-color .25s,background .25s}
+  .anote:focus{border-color:var(--a);background:rgba(255,255,255,.09)}
+  .anote::placeholder{color:#6d6d8c}
+  .marks{display:flex;gap:7px;flex:none}
+  .mk{width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.18);background:transparent;
+    transition:background .35s var(--ease),border-color .35s,box-shadow .35s,transform .3s var(--spring)}
+  .mk:active{transform:scale(.82)}
+  .mk.y{background:var(--y);border-color:transparent;box-shadow:0 0 12px rgba(250,204,21,.45)}
+  .mk.g{background:var(--g);border-color:transparent;box-shadow:0 0 12px rgba(74,222,128,.5)}
+  .empty{color:var(--muted);padding:24px 4px;animation:enter .5s var(--ease) both}
+
+  .hi{padding:12px 14px;border-radius:15px;background:var(--card);display:grid;gap:3px;font-size:14px}
+  .hi small{color:var(--muted)}
+  .section{margin-bottom:22px}
+  .section h3{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:.12em}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
+    .aurora{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="splash"><div class="delta">Δ</div></div>
+<canvas id="bgc" aria-hidden="true"></canvas>
+<div class="aurora" aria-hidden="true"></div>
+
+<div id="app">
+
+  <!-- KUNCI -->
+  <section class="view on" id="v-lock">
+    <div class="lock">
+      <div class="delta">Δ</div>
+      <h2>Akun Game</h2>
+      <div class="bars" id="bars"></div>
+      <div class="keys" id="keys"></div>
+      <p class="err" id="lockErr"></p>
+    </div>
+  </section>
+
+  <!-- DAFTAR GAME -->
+  <section class="view" id="v-home">
+    <header class="top">
+      <div class="t"><h1>Akun Game</h1><small>Pilih game</small></div>
+      <button class="ib" id="openSet" aria-label="Pengaturan">⚙</button>
+    </header>
+    <input class="search" id="q" placeholder="Cari username atau catatan…" autocomplete="off">
+    <div id="results"></div>
+    <div class="games" id="games"></div>
+    <button class="btn main block add" id="addGame">+ Tambah game</button>
+  </section>
+
+  <!-- KALENDER -->
+  <section class="view" id="v-cal">
+    <header class="top">
+      <button class="ib" data-back aria-label="Kembali">←</button>
+      <div class="t"><h1 id="calTitle"></h1><small id="calSub"></small></div>
+      <button class="ib" id="prev" aria-label="Bulan sebelumnya">‹</button>
+      <button class="ib" id="next" aria-label="Bulan berikutnya">›</button>
+    </header>
+    <div class="wk"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+    <div class="grid" id="grid" style="margin-top:6px"></div>
+  </section>
+
+  <!-- DETAIL TANGGAL -->
+  <section class="view" id="v-day">
+    <header class="top">
+      <button class="ib" data-back aria-label="Kembali">←</button>
+      <div class="t"><h1 id="dayTitle"></h1><small id="dayGame"></small></div>
+    </header>
+    <div id="accs"></div>
+    <button class="btn main block add" id="addAcc">+ Tambah akun</button>
+  </section>
+
+  <!-- EDIT AKUN -->
+  <section class="view" id="v-acc">
+    <header class="top">
+      <button class="ib" data-back aria-label="Kembali">←</button>
+      <div class="t"><h1 id="accTitle">Akun</h1></div>
+    </header>
+    <div class="form">
+      <label class="fld">Username / ID
+        <input id="fUser" autocomplete="off" maxlength="120">
+      </label>
+      <label class="fld">Password
+        <div class="pwrow">
+          <input id="fPass" type="password" autocomplete="off" maxlength="200">
+          <button class="ib sm" id="eye" type="button" aria-label="Tampilkan password">👁</button>
+        </div>
+      </label>
+      <label class="fld">Catatan
+        <input id="fNote" maxlength="200" placeholder="mis. kurang satu run">
+      </label>
+      <label class="fld">Tanggal
+        <input id="fDate" type="date">
+      </label>
+      <div class="btns">
+        <button class="btn danger" id="accDel">Hapus</button>
+        <button class="btn main" id="accSave">Simpan</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- EDIT GAME -->
+  <section class="view" id="v-game">
+    <header class="top">
+      <button class="ib" data-back aria-label="Kembali">←</button>
+      <div class="t"><h1 id="gTitle">Game</h1></div>
+    </header>
+    <div class="form">
+      <label class="fld">Nama game
+        <input id="gName" maxlength="80">
+      </label>
+      <label class="fld">URL gambar (opsional)
+        <input id="gImg" type="url" placeholder="https://…/gambar.jpg" maxlength="500">
+      </label>
+      <label class="fld">Warna
+        <input id="gColor" type="color" value="#7c5cff">
+      </label>
+      <div class="prev" id="gPrev"></div>
+      <div class="btns">
+        <button class="btn main" id="gSave">Simpan</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PENGATURAN -->
+  <section class="view" id="v-set">
+    <header class="top">
+      <button class="ib" data-back aria-label="Kembali">←</button>
+      <div class="t"><h1>Pengaturan</h1></div>
+    </header>
+    <div class="section">
+      <h3>Backup & restore</h3>
+      <div class="form">
+        <button class="btn" id="backup">⬇ Backup ke file</button>
+        <label class="btn" style="cursor:pointer">⬆ Pilih file backup
+          <input id="fileImport" type="file" accept="application/json" hidden>
+        </label>
+        <button class="btn danger" id="importGo" hidden>Konfirmasi restore (mengganti semua data)</button>
+        <p class="muted" id="setMsg" style="font-size:13px"></p>
+      </div>
+    </div>
+    <div class="section">
+      <h3>Keamanan</h3>
+      <button class="btn block" id="lockNow">Kunci sekarang</button>
+    </div>
+    <div class="section">
+      <h3>Riwayat</h3>
+      <div class="form" id="hist"></div>
+    </div>
+  </section>
+</div>
+
+<div id="dot" title="Status simpan"></div>
+
+<script>
+(() => {
+  // GANTI dengan URL Web app dari Apps Script (berakhiran /exec)
+  const API_URL = 'PASTE_URL_WEB_APP_KAMU';
+
+  const $ = (s) => document.querySelector(s);
+  const pad = (n) => String(n).padStart(2, '0');
+  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const nowIso = () => new Date().toISOString();
+  const mk = (tag, cls, text) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  };
+  const initials = (n) => (n || '?').trim().split(/\s+/).map((w) => w[0] || '').join('').slice(0, 2).toUpperCase();
+  const MARKS = 5;
+  const EMPTY_MARKS = '-'.repeat(MARKS);
+
+  const S = {
+    pin: '', pinBuf: '',
+    games: [], accounts: [], history: [],
+    gameId: null, day: null, month: new Date(),
+    accId: null, editGameId: null,
+    queue: [], busy: false, stack: [],
+  };
+
+  // ---------- API ----------
+  async function api(action, payload = {}) {
+    let res;
+    try {
+      res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ pin: S.pin, action, ...payload }),
+      });
+    } catch (_) {
+      throw new Error('Tidak bisa terhubung ke server');
+    }
+    let data;
+    try { data = await res.json(); }
+    catch (_) { throw new Error('Respons server tidak valid, cek akses deployment'); }
+    if (!data.ok) throw new Error(data.error || 'Gagal');
+    return data;
+  }
+
+  // ---------- Indikator simpan (bulatan di bawah) ----------
+  function setDot(state) {
+    const d = $('#dot');
+    d.className = state;
+  }
+  // Perubahan langsung tampil lalu dikirim berurutan. Yang gagal tetap di antrean.
+  function save(action, payload) {
+    S.queue.push({ action, payload });
+    return flush();
+  }
+  async function flush() {
+    if (S.busy) return;
+    S.busy = true;
+    while (S.queue.length) {
+      setDot('busy');
+      try {
+        await api(S.queue[0].action, S.queue[0].payload);
+        S.queue.shift();
+      } catch (e) {
+        S.busy = false;
+        setDot('err');
+        return;
+      }
+    }
+    S.busy = false;
+    setDot('ok');
+  }
+  $('#dot').onclick = () => { if ($('#dot').classList.contains('err')) flush(); };
+
+  async function loadAll() {
+    const d = await api('load');
+    S.games = d.games; S.accounts = d.accounts; S.history = d.history;
+  }
+
+  // ---------- Navigasi ----------
+  function go(id, isBack = false) {
+    const cur = document.querySelector('.view.on');
+    if (cur && cur.id === id) return;
+    if (cur) {
+      cur.classList.remove('on');
+      if (!isBack && cur.id !== 'v-lock') S.stack.push(cur.id);
+    }
+    const next = document.getElementById(id);
+    next.classList.toggle('rev', isBack);
+    next.classList.add('on');
+    next.scrollTop = 0;
+    render(id);
+  }
+  function back() { go(S.stack.pop() || 'v-home', true); }
+  function render(id) {
+    if (id === 'v-home') renderHome();
+    if (id === 'v-cal') renderCal();
+    if (id === 'v-day') renderDay();
+    if (id === 'v-set') renderSet();
+  }
+  function setTint(g) {
+    document.documentElement.style.setProperty('--tint', g && g.color ? g.color : '#7c5cff');
+  }
+  document.querySelectorAll('[data-back]').forEach((b) => { b.onclick = back; });
+
+  // ---------- Kunci ----------
+  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','del'];
+  function buildKeys() {
+    const box = $('#keys');
+    KEYS.forEach((k) => {
+      if (!k) { box.appendChild(mk('button', 'ghost')); return; }
+      const b = mk('button', k === 'del' ? 'del' : '', k === 'del' ? '⌫' : k);
+      b.onclick = () => press(k);
+      box.appendChild(b);
+    });
+  }
+  function buildBars() {
+    const box = $('#bars');
+    for (let i = 0; i < 6; i++) box.appendChild(mk('i'));
+  }
+  function paintBars() {
+    [...$('#bars').children].forEach((b, i) => b.classList.toggle('on', i < S.pinBuf.length));
+  }
+  function press(k) {
+    if (k === 'del') S.pinBuf = S.pinBuf.slice(0, -1);
+    else if (S.pinBuf.length < 6) S.pinBuf += k;
+    paintBars();
+    if (S.pinBuf.length === 6) tryUnlock();
+  }
+  async function tryUnlock() {
+    S.pin = S.pinBuf;
+    try {
+      await api('login');
+    } catch (e) {
+      S.pin = ''; S.pinBuf = ''; paintBars();
+      const bars = $('#bars');
+      bars.classList.add('shake');
+      setTimeout(() => bars.classList.remove('shake'), 500);
+      $('#lockErr').textContent = e.message;
+      return;
+    }
+    try {
+      await loadAll();
+    } catch (e) {
+      $('#lockErr').textContent = e.message;
+      return;
+    }
+    S.pinBuf = ''; paintBars(); $('#lockErr').textContent = '';
+    S.stack = [];
+    go('v-home');
+  }
+  document.addEventListener('keydown', (e) => {
+    if (!$('#v-lock').classList.contains('on')) return;
+    if (/^\d$/.test(e.key)) press(e.key);
+    else if (e.key === 'Backspace') press('del');
+  });
+  $('#lockNow').onclick = () => {
+    S.pin = ''; S.gameId = null; S.day = null;
+    S.games = []; S.accounts = []; S.history = [];
+    S.stack = [];
+    setTint(null);
+    go('v-lock');
+  };
+
+  // ---------- Daftar game ----------
+  function renderHome() {
+    const box = $('#games');
+    box.textContent = '';
+    if (!S.games.length) box.appendChild(mk('p', 'empty', 'Belum ada game. Ketuk "Tambah game" di bawah.'));
+    S.games.forEach((g, i) => {
+      const count = S.accounts.filter((a) => a.game_id === g.id).length;
+      const card = mk('div', 'gcard');
+      card.style.setProperty('--i', i);
+      card.style.setProperty('--c', g.color || '#7c5cff');
+      const th = mk('div', 'thumb');
+      if (g.image_url) {
+        const img = mk('img');
+        img.src = g.image_url;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.referrerPolicy = 'no-referrer';
+        img.onerror = () => { img.remove(); th.textContent = initials(g.name); };
+        th.appendChild(img);
+      } else {
+        th.textContent = initials(g.name);
+      }
+      const ed = mk('button', 'gedit', '✎');
+      ed.setAttribute('aria-label', 'Edit game');
+      ed.onclick = (e) => { e.stopPropagation(); openGameForm(g); };
+      card.append(th, mk('div', 'nm', g.name), mk('small', 'muted', count + ' akun'), ed);
+      card.onclick = () => openGame(g.id);
+      box.appendChild(card);
+    });
+    renderSearch();
+  }
+  function openGame(id) {
+    const g = S.games.find((x) => x.id === id);
+    if (!g) return;
+    S.gameId = id;
+    S.month = new Date();
+    setTint(g);
+    go('v-cal');
+  }
+  $('#openSet').onclick = () => go('v-set');
+  $('#addGame').onclick = () => openGameForm(null);
+
+  // ---------- Pencarian ----------
+  $('#q').oninput = renderSearch;
+  function renderSearch() {
+    const q = $('#q').value.trim().toLowerCase();
+    const box = $('#results');
+    box.textContent = '';
+    if (!q) return;
+    S.accounts
+      .filter((a) => (a.username + ' ' + a.note).toLowerCase().includes(q))
+      .slice(0, 60)
+      .forEach((a) => {
+        const g = S.games.find((x) => x.id === a.game_id);
+        const r = mk('button', 'hit');
+        r.append(
+          mk('b', '', a.username || '(tanpa nama)'),
+          mk('small', '', [g && g.name, a.date, a.note].filter(Boolean).join(' · '))
+        );
+        r.onclick = () => {
+          S.gameId = a.game_id;
+          S.month = new Date(a.date + 'T00:00:00');
+          S.day = a.date;
+          setTint(g);
+          go('v-day');
+        };
+        box.appendChild(r);
+      });
+  }
+
+  // ---------- Kalender ----------
+  function renderCal() {
+    const g = S.games.find((x) => x.id === S.gameId);
+    if (!g) return;
+    $('#calTitle').textContent = g.name;
+    const m = S.month;
+    const y = m.getFullYear(), mo = m.getMonth();
+    $('#calSub').textContent = m.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+    const grid = $('#grid');
+    grid.textContent = '';
+    const offset = (new Date(y, mo, 1).getDay() + 6) % 7;
+    const total = new Date(y, mo + 1, 0).getDate();
+    const today = ymd(new Date());
+    for (let i = 0; i < offset; i++) grid.appendChild(mk('div', 'cell blank'));
+    for (let d = 1; d <= total; d++) {
+      const key = `${y}-${pad(mo + 1)}-${pad(d)}`;
+      const cnt = S.accounts.filter((a) => a.game_id === g.id && a.date === key).length;
+      const cell = mk('div', 'cell' + (key === today ? ' today' : ''));
+      cell.style.setProperty('--i', d);
+      cell.appendChild(mk('span', 'n', String(d)));
+      if (cnt) cell.appendChild(mk('span', 'c', cnt + ' akun'));
+      cell.onclick = () => { S.day = key; go('v-day'); };
+      grid.appendChild(cell);
+    }
+  }
+  $('#prev').onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() - 1, 1); renderCal(); };
+  $('#next').onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + 1, 1); renderCal(); };
+
+  // ---------- Detail tanggal: daftar akun ----------
+  function renderDay() {
+    const g = S.games.find((x) => x.id === S.gameId);
+    if (!g || !S.day) return;
+    $('#dayTitle').textContent = new Date(S.day + 'T00:00:00')
+      .toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+    $('#dayGame').textContent = g.name;
+
+    const list = $('#accs');
+    list.textContent = '';
+    const accs = S.accounts.filter((a) => a.game_id === g.id && a.date === S.day);
+    if (!accs.length) list.appendChild(mk('p', 'empty', 'Belum ada akun di tanggal ini.'));
+    accs.forEach((a, i) => list.appendChild(accRow(a, i)));
+  }
+
+  function marksOf(a) {
+    return (a.marks || EMPTY_MARKS).padEnd(MARKS, '-').slice(0, MARKS).split('');
+  }
+
+  function accRow(a, i) {
+    const row = mk('div', 'arow');
+    row.style.setProperty('--i', i);
+
+    // baris 1: username + salin
+    const line = mk('div', 'line');
+    const un = mk('div', 'uname', a.username || '(tanpa nama)');
+    un.onclick = () => openAcc(a.id);
+    const cu = mk('button', 'ib sm', '⧉');
+    cu.setAttribute('aria-label', 'Salin username');
+    cu.onclick = () => copy(a.username, cu);
+    const cp = mk('button', 'ib sm', '🔑');
+    cp.setAttribute('aria-label', 'Salin password');
+    cp.onclick = () => copy(a.password, cp);
+    line.append(un, cu, cp);
+
+    // baris 2: catatan (selalu terlihat) + tanda centang
+    const sub = mk('div', 'sub');
+    const note = mk('input', 'anote');
+    note.value = a.note || '';
+    note.placeholder = 'Catatan…';
+    note.maxLength = 200;
+    note.onchange = () => {
+      const v = note.value.trim();
+      if (v === (a.note || '')) return;
+      a.note = v;
+      a.updated_at = nowIso();
+      save('saveAccount', { item: { ...a } });
+    };
+    note.onkeydown = (e) => { if (e.key === 'Enter') note.blur(); };
+
+    const marks = mk('div', 'marks');
+    marksOf(a).forEach((st, idx) => {
+      const b = mk('button', 'mk' + (st === 'y' ? ' y' : st === 'g' ? ' g' : ''));
+      b.setAttribute('aria-label', 'Tanda ' + (idx + 1));
+      b.onclick = () => {
+        // ketuk: kosong -> kuning -> hijau -> kosong
+        const arr = marksOf(a);
+        arr[idx] = arr[idx] === '-' ? 'y' : arr[idx] === 'y' ? 'g' : '-';
+        a.marks = arr.join('');
+        a.updated_at = nowIso();
+        renderDay();
+        save('saveAccount', { item: { ...a } });
+      };
+      marks.appendChild(b);
+    });
+
+    sub.append(note, marks);
+    row.append(line, sub);
+    return row;
+  }
+  $('#addAcc').onclick = () => openAcc(null);
+
+  // ---------- Editor akun (halaman penuh) ----------
+  function openAcc(id) {
+    const a = id ? S.accounts.find((x) => x.id === id) : null;
+    S.accId = a ? a.id : null;
+    $('#accTitle').textContent = a ? 'Edit akun' : 'Akun baru';
+    $('#fUser').value = a ? a.username : '';
+    $('#fPass').value = a ? a.password : '';
+    $('#fPass').type = 'password';
+    $('#fNote').value = a ? a.note : '';
+    $('#fDate').value = a ? a.date : S.day;
+    $('#accDel').hidden = !a;
+    $('#accDel').textContent = 'Hapus';
+    $('#accDel').dataset.armed = '';
+    go('v-acc');
+  }
+  $('#eye').onclick = () => {
+    const p = $('#fPass');
+    p.type = p.type === 'password' ? 'text' : 'password';
+  };
+  $('#accSave').onclick = () => {
+    const username = $('#fUser').value.trim();
+    if (!username) {
+      $('#fUser').placeholder = 'Username wajib diisi';
+      $('#fUser').focus();
+      return;
+    }
+    const date = $('#fDate').value || S.day;
+    const old = S.accounts.find((x) => x.id === S.accId);
+    const now = nowIso();
+    const a = {
+      id: old ? old.id : uid(),
+      game_id: S.gameId,
+      date,
+      username,
+      password: $('#fPass').value,
+      note: $('#fNote').value.trim(),
+      marks: old ? (old.marks || EMPTY_MARKS) : EMPTY_MARKS,
+      created_at: old ? old.created_at : now,
+      updated_at: now,
+    };
+    S.accounts = S.accounts.filter((x) => x.id !== a.id).concat(a);
+    S.day = date;
+    save('saveAccount', { item: a });
+    back();
+  };
+  $('#accDel').onclick = () => {
+    const b = $('#accDel');
+    if (!b.dataset.armed) {
+      b.dataset.armed = '1';
+      b.textContent = 'Yakin, hapus?';
+      setTimeout(() => { b.dataset.armed = ''; b.textContent = 'Hapus'; }, 3000);
+      return;
+    }
+    const id = S.accId;
+    const a = S.accounts.find((x) => x.id === id);
+    S.accounts = S.accounts.filter((x) => x.id !== id);
+    save('deleteAccount', { id, name: a ? a.username : '' });
+    back();
+  };
+
+  // ---------- Editor game (halaman penuh) ----------
+  function openGameForm(g) {
+    S.editGameId = g ? g.id : null;
+    $('#gTitle').textContent = g ? 'Edit game' : 'Game baru';
+    $('#gName').value = g ? g.name : '';
+    $('#gImg').value = g ? g.image_url : '';
+    $('#gColor').value = (g && g.color) || '#7c5cff';
+    updPrev();
+    go('v-game');
+  }
+  function updPrev() {
+    const url = $('#gImg').value.trim();
+    const p = $('#gPrev');
+    p.textContent = '';
+    p.style.setProperty('--c', $('#gColor').value);
+    if (url) {
+      const img = mk('img');
+      img.src = url;
+      img.referrerPolicy = 'no-referrer';
+      img.onerror = () => { img.remove(); p.textContent = initials($('#gName').value); };
+      p.appendChild(img);
+    } else {
+      p.textContent = initials($('#gName').value);
+    }
+  }
+  ['#gImg', '#gName', '#gColor'].forEach((s) => $(s).addEventListener('input', updPrev));
+  $('#gSave').onclick = () => {
+    const name = $('#gName').value.trim();
+    if (!name) { $('#gName').placeholder = 'Nama game wajib diisi'; $('#gName').focus(); return; }
+    const old = S.games.find((x) => x.id === S.editGameId);
+    const g = {
+      id: old ? old.id : uid(),
+      name,
+      image_url: $('#gImg').value.trim(),
+      color: $('#gColor').value,
+      created_at: old ? old.created_at : nowIso(),
+    };
+    S.games = S.games.filter((x) => x.id !== g.id).concat(g);
+    save('saveGame', { item: g });
+    back();
+  };
+
+  // ---------- Pengaturan ----------
+  let pendingImport = null;
+  function setMsg(t) { $('#setMsg').textContent = t; }
+  function renderSet() {
+    setMsg('');
+    const box = $('#hist');
+    box.textContent = '';
+    if (!S.history.length) box.appendChild(mk('p', 'muted', 'Belum ada riwayat.'));
+    S.history.slice(0, 200).forEach((h) => {
+      const r = mk('div', 'hi');
+      const when = new Date(h.at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+      r.append(mk('small', '', when), mk('span', '', h.action + (h.target ? ' · ' + h.target : '')));
+      box.appendChild(r);
+    });
+  }
+  $('#backup').onclick = async () => {
+    try {
+      const d = await api('export');
+      const blob = new Blob(
+        [JSON.stringify({ version: 2, exported_at: nowIso(), ...d.data }, null, 2)],
+        { type: 'application/json' }
+      );
+      const a = mk('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'akun-game-backup-' + ymd(new Date()) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      setMsg('Backup diunduh.');
+    } catch (e) { setMsg(e.message); }
+  };
+  $('#fileImport').onchange = async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!Array.isArray(data.accounts)) throw new Error('format');
+      pendingImport = data;
+      $('#importGo').hidden = false;
+      setMsg('File siap. Konfirmasi untuk mengganti semua data.');
+    } catch (_) {
+      pendingImport = null;
+      $('#importGo').hidden = true;
+      setMsg('File backup tidak valid.');
+    }
+  };
+  $('#importGo').onclick = async () => {
+    if (!pendingImport) return;
+    try {
+      await api('import', { data: pendingImport });
+      pendingImport = null;
+      $('#importGo').hidden = true;
+      await loadAll();
+      setMsg('Restore selesai.');
+    } catch (e) { setMsg(e.message); }
+  };
+
+  // ---------- Salin ----------
+  function copy(text, btn) {
+    if (!text) return;
+    const done = () => {
+      const old = btn.textContent;
+      btn.textContent = '✓';
+      setTimeout(() => { btn.textContent = old; }, 1100);
+    };
+    const fallback = () => {
+      const t = mk('textarea');
+      t.value = text;
+      document.body.appendChild(t);
+      t.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      t.remove();
+      done();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  // ---------- Latar bergerak (partikel) ----------
+  const cv = $('#bgc');
+  const ctx = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hues = ['124,92,255', '45,226,196', '255,107,166', '250,204,21'];
+  let orbs = [];
+  function sizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = innerWidth * dpr;
+    cv.height = innerHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.min(38, Math.floor((innerWidth * innerHeight) / 26000));
+    orbs = Array.from({ length: n }, () => ({
+      x: Math.random() * innerWidth,
+      y: Math.random() * innerHeight,
+      r: 1.2 + Math.random() * 3.2,
+      vx: (Math.random() - 0.5) * 0.18,
+      vy: (Math.random() - 0.5) * 0.18,
+      c: hues[(Math.random() * hues.length) | 0],
+      p: Math.random() * Math.PI * 2,
+    }));
+  }
+  function frame(t) {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const o of orbs) {
+      o.x += o.vx + Math.sin(t / 3000 + o.p) * 0.12;
+      o.y += o.vy + Math.cos(t / 3500 + o.p) * 0.12;
+      if (o.x < -20) o.x = innerWidth + 20;
+      if (o.x > innerWidth + 20) o.x = -20;
+      if (o.y < -20) o.y = innerHeight + 20;
+      if (o.y > innerHeight + 20) o.y = -20;
+      const a = 0.25 + 0.25 * Math.sin(t / 1400 + o.p);
+      const g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r * 4);
+      g.addColorStop(0, `rgba(${o.c},${a})`);
+      g.addColorStop(1, `rgba(${o.c},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(o.x, o.y, o.r * 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  sizeCanvas();
+  addEventListener('resize', sizeCanvas);
+  requestAnimationFrame(frame);
+
+  // ---------- Init ----------
+  buildKeys();
+  buildBars();
+  setDot('');
+  addEventListener('load', () => setTimeout(() => $('#splash').classList.add('gone'), 900));
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
