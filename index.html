@@ -52,7 +52,7 @@
   /* layar */
   #app{position:fixed;inset:0;z-index:1}
   .view{position:absolute;inset:0;display:none;overflow-y:auto;max-width:760px;margin:0 auto;
-    padding:calc(env(safe-area-inset-top) + 18px) 20px calc(env(safe-area-inset-bottom) + 100px)}
+    padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 100px)}
   .view.on{display:block;animation:enter .4s var(--ease) both}
   .view.on.rev{animation-name:enterRev}
   #v-lock.on{display:flex;align-items:center;justify-content:center}
@@ -68,7 +68,7 @@
   #dot.err{width:14px;background:var(--r);pointer-events:auto;cursor:pointer}
   @keyframes swing{from{transform:translateX(-26px)}to{transform:translateX(26px)}}
 
-  /* pesan kecil (misal: tekan lagi untuk keluar) */
+  /* pesan kecil */
   #hint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 50px);transform:translate(-50%,8px);opacity:0;
     background:var(--surf2);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:700;white-space:nowrap;
     transition:opacity .25s,transform .25s var(--ease);pointer-events:none;z-index:7}
@@ -92,14 +92,15 @@
   .err{min-height:18px;font-size:14px;color:var(--r);font-weight:700}
 
   /* bar atas */
-  .top{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
   .top .t{flex:1;min-width:0}
   .top h1{font-size:28px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1}
   .top small{display:block;color:var(--muted);font-size:14px;font-weight:700;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ib{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;background:var(--surf);
     color:var(--ink);cursor:pointer;flex:none;transition:transform .12s var(--ease),background .15s}
   .ib:active{transform:scale(.92);background:var(--surf2)}
-  .ib.sm{width:40px;height:40px;border-radius:13px}
+  .ib.sm{width:36px;height:36px;border-radius:12px}
+  .ib.sm .i{width:18px;height:18px}
 
   /* tombol & isian */
   .btn{height:54px;padding:0 22px;border-radius:17px;font-weight:800;font-size:16px;cursor:pointer;background:var(--surf2);
@@ -118,66 +119,68 @@
   .fld input[type=color]{padding:8px;height:56px}
   .pwrow{display:flex;gap:8px;align-items:center}
   .pwrow input{flex:1}
-  .prev{height:160px;border-radius:22px;overflow:hidden;display:grid;place-items:center;font-size:44px;font-weight:800;
-    background:linear-gradient(135deg,var(--c,#7c5cff),#1a1a33)}
+  .prev{width:100%;max-width:200px;aspect-ratio:1/1;justify-self:center;border-radius:22px;overflow:hidden;display:grid;place-items:center;
+    font-size:48px;font-weight:800;background:linear-gradient(135deg,var(--c,#7c5cff),#1a1a33)}
   .prev img{width:100%;height:100%;object-fit:cover}
-  .search{width:100%;height:54px;border-radius:17px;background:var(--surf);border:1.5px solid var(--line);
-    padding:0 18px;margin-bottom:16px;font-size:16px;font-weight:600;transition:border-color .15s}
+  .search{width:100%;height:52px;border-radius:17px;background:var(--surf);border:1.5px solid var(--line);
+    padding:0 18px;margin-bottom:14px;font-size:16px;font-weight:600;transition:border-color .15s}
   .search::placeholder{color:var(--muted);font-weight:600}
   .search:focus{border-color:var(--a)}
-  .hit{width:100%;display:grid;gap:4px;text-align:left;padding:15px 16px;border-radius:17px;background:var(--surf);margin-bottom:10px}
+  .hit{width:100%;display:grid;gap:4px;text-align:left;padding:14px 16px;border-radius:17px;background:var(--surf);margin-bottom:10px}
   .hit b{font-weight:800;font-size:16px}
   .hit small{color:var(--muted);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .add{margin-top:14px}
 
-  /* daftar game */
-  .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(156px,1fr));gap:14px}
-  .gcard{position:relative;text-align:left;border-radius:24px;background:var(--surf);padding:10px;display:grid;gap:10px;
+  /* dashboard: game 1:1 */
+  .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .gcard{position:relative;text-align:left;border-radius:22px;background:var(--surf);padding:8px;display:grid;gap:9px;
     cursor:pointer;animation:enter .45s var(--ease) both;animation-delay:calc(var(--i,0) * 50ms);transition:transform .15s var(--ease)}
   .gcard:active{transform:scale(.97)}
-  .thumb{aspect-ratio:4/3;border-radius:17px;overflow:hidden;display:grid;place-items:center;font-size:32px;font-weight:800;
+  .thumb{width:100%;aspect-ratio:1/1;border-radius:16px;overflow:hidden;display:grid;place-items:center;font-size:34px;font-weight:800;
     background:linear-gradient(135deg,var(--c,#7c5cff),#1a1a33)}
-  .thumb img{width:100%;height:100%;object-fit:cover}
-  .gcard .nm{font-weight:800;font-size:16px;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .gcard small{padding:0 4px;color:var(--muted);font-weight:700;font-size:13px}
-  .gedit{position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:12px;background:rgba(10,10,20,.7);
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .gcard .nm{font-weight:800;font-size:15px;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gcard small{padding:0 4px 4px;color:var(--muted);font-weight:700;font-size:13px}
+  .gedit{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:12px;background:rgba(10,10,20,.75);
     display:grid;place-items:center}
 
   /* kalender */
-  .wk,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+  .wk,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
   .wk span{text-align:center;font-size:12px;color:var(--muted);font-weight:800;padding:2px 0 8px;letter-spacing:.04em}
-  .cell{position:relative;aspect-ratio:1;border-radius:16px;background:var(--surf);
+  .cell{position:relative;aspect-ratio:1;border-radius:14px;background:var(--surf);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;
     animation:enter .35s var(--ease) both;animation-delay:calc(var(--i,0) * 10ms);transition:transform .12s var(--ease)}
   .cell:active{transform:scale(.92)}
   .cell.blank{background:none;pointer-events:none}
-  .cell .n{font-weight:800;font-size:16px}
+  .cell .n{font-weight:800;font-size:15px}
   .cell.today{box-shadow:inset 0 0 0 2px var(--b)}
   .cell .c{font-size:10px;color:var(--muted);font-weight:800}
   .cell.full .c{color:var(--g)}
 
-  /* daftar akun (tiap hari) */
-  .arow{display:grid;gap:12px;padding:16px;border-radius:20px;background:var(--surf);margin-bottom:12px}
-  .line{display:flex;align-items:center;gap:8px;min-width:0}
-  .uname{flex:1;min-width:0;text-align:left;font-weight:800;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
-  .sub{display:flex;align-items:center;gap:12px}
-  .anote{flex:1;min-width:0;height:40px;border-radius:12px;background:var(--surf2);padding:0 13px;font-size:14px;font-weight:600;
+  /* daftar akun (ringkas) */
+  .arow{display:grid;gap:8px;padding:11px 12px;border-radius:17px;background:var(--surf);margin-bottom:8px}
+  .line{display:flex;align-items:center;gap:6px;min-width:0}
+  .uname{flex:1;min-width:0;text-align:left;font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+  .sub{display:flex;align-items:center;gap:8px}
+  .anote{flex:1;min-width:0;height:34px;border-radius:10px;background:var(--surf2);padding:0 11px;font-size:14px;font-weight:600;
     color:#e4e4f8;border:1.5px solid transparent;transition:border-color .15s}
   .anote:focus{border-color:var(--a)}
   .anote::placeholder{color:#6a6a8e;font-weight:600}
-  .marks{display:flex;gap:8px;flex:none}
-  /* tanda: tanpa animasi, hanya warna berganti dan sedikit tekanan */
-  .mk{width:26px;height:26px;border-radius:50%;background:var(--surf2);box-shadow:inset 0 0 0 1.5px var(--line);
-    transition:transform .08s linear}
-  .mk:active{transform:scale(.84)}
-  .mk.y{background:var(--y);box-shadow:none}
-  .mk.g{background:var(--g);box-shadow:none}
-  .empty{color:var(--muted);padding:26px 4px;font-weight:700}
-  .today-tag{display:inline-block;margin-left:8px;font-size:12px;color:var(--b);font-weight:800;letter-spacing:.06em;text-transform:uppercase;vertical-align:middle}
 
-  .hi{padding:14px 16px;border-radius:17px;background:var(--surf);display:grid;gap:4px;font-size:15px;font-weight:600}
+  /* kotak centang: visual kecil, area tekan tetap besar */
+  .marks{display:flex;flex:none}
+  .mk{position:relative;width:30px;height:30px;background:transparent}
+  .mk::before{content:'';position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;
+    background:var(--surf2);box-shadow:inset 0 0 0 1.5px var(--line);transition:transform .08s linear}
+  .mk:active::before{transform:scale(.8)}
+  .mk.y::before{background:var(--y);box-shadow:none}
+  .mk.g::before{background:var(--g);box-shadow:none}
+
+  .empty{color:var(--muted);padding:24px 4px;font-weight:700}
+
+  .hi{padding:12px 14px;border-radius:15px;background:var(--surf);display:grid;gap:3px;font-size:14px;font-weight:600}
   .hi small{color:var(--muted);font-weight:700}
-  .section{margin-bottom:26px}
+  .section{margin-bottom:24px}
   .section h3{font-size:12px;color:var(--muted);font-weight:800;margin-bottom:12px;text-transform:uppercase;letter-spacing:.16em}
 
   @media (prefers-reduced-motion:reduce){
@@ -226,7 +229,7 @@
     </div>
   </section>
 
-  <!-- DASHBOARD: DAFTAR GAME -->
+  <!-- DASHBOARD -->
   <section class="view" id="v-home">
     <header class="top">
       <div class="t"><h1>Akun Game</h1><small>Pilih game</small></div>
@@ -360,6 +363,7 @@
   const initials = (n) => (n || '?').trim().split(/\s+/).map((w) => w[0] || '').join('').slice(0, 2).toUpperCase();
   const MARKS = 5;
   const EMPTY_MARKS = '-'.repeat(MARKS);
+  const HIST_SHOW = 15;
 
   const S = {
     pin: '', pinBuf: '',
@@ -367,7 +371,7 @@
     gameId: null, day: null, month: new Date(),
     accId: null, editGameId: null,
     queue: [], busy: false,
-    exitUntil: 0,
+    exitUntil: 0, histAll: false,
   };
 
   // ---------- API ----------
@@ -441,7 +445,6 @@
     if (!fromPop) history.pushState({ v: id }, '');
     render(id);
   }
-  // tombol kembali di layar: ikuti riwayat, supaya back Android juga sama
   function back() { history.back(); }
   function render(id) {
     if (id === 'v-home') renderHome();
@@ -455,8 +458,8 @@
   document.querySelectorAll('[data-back]').forEach((b) => { b.onclick = back; });
 
   // back Android/browser:
-  //  - di layar lain: kembali ke layar sebelumnya
-  //  - di dashboard: tekan sekali untuk peringatan, tekan lagi dalam 2,5 detik untuk keluar
+  //  - layar lain: kembali ke layar sebelumnya
+  //  - dashboard: tekan sekali untuk peringatan, tekan lagi dalam 2,5 detik untuk keluar
   //  - belum buka kunci: tetap di layar kunci
   window.addEventListener('popstate', (e) => {
     const target = (e.state && e.state.v) || 'v-lock';
@@ -535,7 +538,7 @@
     go('v-lock');
   };
 
-  // ---------- Dashboard: daftar game ----------
+  // ---------- Dashboard ----------
   function renderHome() {
     const box = $('#games');
     box.textContent = '';
@@ -608,8 +611,9 @@
 
   // ---------- Data helper ----------
   function accountsOf(gid) { return S.accounts.filter((a) => a.game_id === gid); }
+  function checkOf(accId, date) { return S.checks.find((x) => x.id === accId + '|' + date); }
   function marksFor(accId, date) {
-    const c = S.checks.find((x) => x.id === accId + '|' + date);
+    const c = checkOf(accId, date);
     return (c && c.marks ? c.marks : EMPTY_MARKS).padEnd(MARKS, '-').slice(0, MARKS).split('');
   }
   function isChecked(accId, date) {
@@ -648,26 +652,34 @@
   $('#next').onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + 1, 1); renderCal(); };
 
   // ---------- Centang harian ----------
+  // Akun yang sudah punya tanda hijau naik ke atas, urut dari yang paling dulu selesai.
+  // Sisanya tetap di urutan semula di bawahnya.
   function renderDay() {
     const g = S.games.find((x) => x.id === S.gameId);
     if (!g) return;
     if (!S.day) S.day = ymd(new Date());
     const isToday = S.day === ymd(new Date());
-    const title = new Date(S.day + 'T00:00:00')
+    $('#dayTitle').textContent = new Date(S.day + 'T00:00:00')
       .toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
-    $('#dayTitle').textContent = title;
     $('#dayGame').textContent = g.name + (isToday ? ' · hari ini' : '');
 
     const list = $('#accs');
     list.textContent = '';
     const accs = accountsOf(g.id);
-    if (!accs.length) list.appendChild(mk('p', 'empty', 'Belum ada akun. Ketuk "Tambah akun" di bawah.'));
-    accs.forEach((a) => list.appendChild(accRow(a)));
+    if (!accs.length) { list.appendChild(mk('p', 'empty', 'Belum ada akun. Ketuk "Tambah akun" di bawah.')); return; }
+
+    const rows = accs.map((a) => {
+      const arr = marksFor(a.id, S.day);
+      const c = checkOf(a.id, S.day);
+      return { a, green: arr.includes('g'), at: (c && c.done_at) || '' };
+    });
+    const doneRows = rows.filter((r) => r.green).sort((x, y) => (x.at < y.at ? -1 : x.at > y.at ? 1 : 0));
+    const todoRows = rows.filter((r) => !r.green);
+    [...doneRows, ...todoRows].forEach((r) => list.appendChild(accRow(r.a)));
   }
 
   function accRow(a) {
     const row = mk('div', 'arow');
-    row.dataset.id = a.id;
 
     // baris 1: username + salin
     const line = mk('div', 'line');
@@ -683,7 +695,7 @@
     cp.onclick = () => copy(a.password, cp);
     line.append(un, cu, cp);
 
-    // baris 2: catatan tetap + tanda harian
+    // baris 2: catatan tetap + kotak centang harian
     const sub = mk('div', 'sub');
     const note = mk('input', 'anote');
     note.value = a.note || '';
@@ -699,12 +711,10 @@
     note.onkeydown = (e) => { if (e.key === 'Enter') note.blur(); };
 
     const marks = mk('div', 'marks');
-    const arr = marksFor(a.id, S.day);
-    arr.forEach((st, idx) => {
-      const b = mk('button', 'mk');
+    marksFor(a.id, S.day).forEach((st, idx) => {
+      const b = mk('button', 'mk' + (st === 'y' ? ' y' : st === 'g' ? ' g' : ''));
       b.setAttribute('aria-label', 'Tanda ' + (idx + 1));
-      applyMark(b, st);
-      b.onclick = () => toggleMark(a, idx, b);
+      b.onclick = () => toggleMark(a, idx);
       marks.appendChild(b);
     });
 
@@ -713,20 +723,24 @@
     return row;
   }
 
-  function applyMark(btn, st) {
-    btn.classList.toggle('y', st === 'y');
-    btn.classList.toggle('g', st === 'g');
-  }
-
-  // ketuk: kosong -> kuning -> hijau -> kosong (tanpa menggambar ulang daftar)
-  function toggleMark(a, idx, btn) {
+  // ketuk: kosong -> kuning -> hijau -> kosong
+  function toggleMark(a, idx) {
     const arr = marksFor(a.id, S.day);
+    const wasGreen = arr.includes('g');
     arr[idx] = arr[idx] === '-' ? 'y' : arr[idx] === 'y' ? 'g' : '-';
-    applyMark(btn, arr[idx]);
+    const isGreen = arr.includes('g');
     const key = a.id + '|' + S.day;
-    const item = { id: key, account_id: a.id, date: S.day, marks: arr.join(''), updated_at: nowIso() };
+    const prev = checkOf(a.id, S.day);
+    let doneAt = (prev && prev.done_at) || '';
+    if (!wasGreen && isGreen) doneAt = nowIso();
+    if (wasGreen && !isGreen) doneAt = '';
+    const item = {
+      id: key, account_id: a.id, date: S.day,
+      marks: arr.join(''), updated_at: nowIso(), done_at: doneAt,
+    };
     S.checks = S.checks.filter((c) => c.id !== key).concat(item);
     save('saveCheck', { item });
+    renderDay();
   }
 
   $('#addAcc').onclick = () => openAcc(null);
@@ -842,13 +856,19 @@
     setMsg('');
     const box = $('#hist');
     box.textContent = '';
-    if (!S.history.length) box.appendChild(mk('p', 'muted', 'Belum ada riwayat.'));
-    S.history.slice(0, 200).forEach((h) => {
+    if (!S.history.length) { box.appendChild(mk('p', 'muted', 'Belum ada riwayat.')); return; }
+    const shown = S.histAll ? S.history : S.history.slice(0, HIST_SHOW);
+    shown.forEach((h) => {
       const r = mk('div', 'hi');
       const when = new Date(h.at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
       r.append(mk('small', '', when), mk('span', '', h.action + (h.target ? ' · ' + h.target : '')));
       box.appendChild(r);
     });
+    if (S.history.length > HIST_SHOW) {
+      const more = mk('button', 'btn block', S.histAll ? 'Sembunyikan' : 'Tampilkan semua (' + S.history.length + ')');
+      more.onclick = () => { S.histAll = !S.histAll; renderSet(); };
+      box.appendChild(more);
+    }
   }
   $('#backup').onclick = async () => {
     try {
@@ -962,7 +982,6 @@
   requestAnimationFrame(frame);
 
   // ---------- Init ----------
-  // titik awal riwayat = layar kunci, supaya back dari dashboard tidak langsung keluar
   history.replaceState({ v: 'v-lock' }, '');
   buildKeys();
   buildBars();
