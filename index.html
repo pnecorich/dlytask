@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c0c1c">
+<title>Akun Game</title>
+<style>
+  :root{
+    --bg:#0c0c1c;--ink:#f3f3fb;--muted:#9b9bb8;
+    --glass:rgba(255,255,255,.07);--glass2:rgba(255,255,255,.12);--line:rgba(255,255,255,.12);
+    --a:#7c5cff;--b:#2de2c4;--c:#ff6ba6;--ok:#4ade80;--warn:#fb923c;--tint:#7c5cff;
+    --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden}
+  button,input{font:inherit;color:inherit;border:0;outline:none;background:none}
+  .muted{color:var(--muted)}
+  small{font-size:12px}
+
+  /* ambient */
+  .blobs{position:fixed;inset:-25vmax;filter:blur(80px);opacity:.45;pointer-events:none;z-index:0}
+  .blobs span{position:absolute;width:50vmax;height:50vmax;border-radius:50%;
+    background:radial-gradient(circle,var(--tint),transparent 65%);animation:drift 30s var(--ease) infinite alternate}
+  .blobs span:nth-child(2){background:radial-gradient(circle,var(--b),transparent 65%);animation-duration:38s;top:40%;left:45%;opacity:.5}
+  .blobs span:nth-child(3){background:radial-gradient(circle,var(--c),transparent 65%);animation-duration:44s;bottom:-10%;right:-5%;opacity:.4}
+  @keyframes drift{from{transform:translate(-10%,-6%) scale(1)}to{transform:translate(14%,12%) scale(1.15)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+
+  /* screens */
+  #app{position:relative;z-index:1;height:100dvh;overflow:hidden}
+  .screen{position:absolute;inset:0;overflow-y:auto;padding:max(16px,env(safe-area-inset-top)) 16px 32px;
+    opacity:0;transform:translateX(40px) scale(.98);pointer-events:none;
+    transition:opacity .5s var(--ease),transform .6s var(--ease)}
+  .screen.active{opacity:1;transform:none;pointer-events:auto}
+  .screen.exit-left,.screen.from-left{transform:translateX(-40px) scale(.98)}
+  .screen.active.exit-left{transform:none}
+
+  /* lock */
+  #lock{display:flex;align-items:center;justify-content:center}
+  .lock{width:min(340px,100%);text-align:center;animation:rise .8s var(--ease) both}
+  .lock-ico{width:64px;height:64px;margin:0 auto 12px;border-radius:20px;display:grid;place-items:center;font-size:28px;
+    background:var(--glass2);animation:float 4s ease-in-out infinite}
+  .lock h2{font-size:22px}
+  .dots{display:flex;gap:14px;justify-content:center;margin:22px 0 26px}
+  .dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);transition:all .35s var(--spring)}
+  .dots i.on{background:linear-gradient(135deg,var(--a),var(--b));border-color:transparent;transform:scale(1.15)}
+  .dots.shake{animation:shake .45s}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .pad button{height:68px;border-radius:50%;font-size:24px;font-weight:600;background:var(--glass);
+    border:1px solid var(--line);backdrop-filter:blur(14px);transition:transform .2s var(--spring),background .2s}
+  .pad button:active{transform:scale(.9);background:var(--glass2)}
+  .pad button.ghost{visibility:hidden}
+  .err{min-height:20px;margin-top:14px;color:#ffb3d0;font-size:14px}
+
+  /* top bar */
+  .top{display:flex;align-items:center;gap:10px;margin:4px 0 16px;animation:rise .7s var(--ease) both}
+  .top h1{font-size:24px;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top-title{flex:1;min-width:0}
+  .top-title h1{font-size:20px}
+  .top .grow{flex:1}
+  .top-actions{display:flex;gap:6px}
+  .icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--glass);
+    border:1px solid var(--line);font-size:18px;cursor:pointer;flex:none;transition:transform .25s var(--spring)}
+  .icon:active{transform:scale(.9)}
+  .icon.small{width:34px;height:34px;font-size:15px}
+
+  /* buttons */
+  .btn-primary{height:48px;padding:0 20px;border-radius:14px;background:linear-gradient(135deg,var(--a),var(--b));
+    color:#fff;font-weight:600;cursor:pointer;box-shadow:0 8px 24px rgba(124,92,255,.35);transition:transform .3s var(--spring)}
+  .btn-primary:active{transform:scale(.96)}
+  .btn-ghost{height:44px;padding:0 16px;border-radius:12px;background:var(--glass2);cursor:pointer;
+    display:inline-flex;align-items:center;transition:transform .25s var(--spring)}
+  .btn-ghost:active{transform:scale(.96)}
+  .btn-ghost.danger{color:#ffb3d0}
+  .block{width:100%;margin-top:14px}
+
+  /* search */
+  .search{margin-bottom:12px;animation:rise .4s var(--ease) both}
+  .search input{width:100%;height:46px;padding:0 16px;border-radius:14px;background:var(--glass);border:1px solid var(--line)}
+  .search input:focus{border-color:var(--a)}
+  .list{display:grid;gap:8px;margin-bottom:14px}
+  .acc{display:flex;align-items:center;gap:6px;padding:10px;border-radius:14px;background:var(--glass);
+    border:1px solid var(--line);animation:rise .5s var(--ease) both;animation-delay:calc(var(--i,0) * 50ms)}
+  .acc-main{flex:1;text-align:left;display:grid;gap:2px;min-width:0;cursor:pointer;padding:4px}
+  .acc-main b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .acc-main small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* games */
+  .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .game{position:relative;text-align:left;padding:12px;border-radius:20px;background:var(--glass);
+    border:1px solid var(--line);display:grid;gap:8px;cursor:pointer;
+    animation:pop .6s var(--spring) both;animation-delay:calc(var(--i,0) * 70ms);
+    transition:transform .35s var(--spring),box-shadow .35s;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .game:hover{transform:translateY(-4px)}
+  .game:active{transform:scale(.97)}
+  .thumb{aspect-ratio:4/3;border-radius:14px;overflow:hidden;display:grid;place-items:center;
+    font-size:30px;font-weight:700;background:linear-gradient(135deg,var(--c),#1b1b38)}
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .gname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .game .edit{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:10px;
+    background:rgba(0,0,0,.45);font-size:13px;cursor:pointer}
+  .empty{text-align:center;padding:40px 10px;color:var(--muted);animation:rise .8s var(--ease) both}
+
+  /* calendar */
+  .weekdays,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .weekdays span{text-align:center;font-size:12px;color:var(--muted);padding:4px 0}
+  .cell{position:relative;aspect-ratio:1;border-radius:14px;background:var(--glass);border:1px solid var(--line);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;
+    animation:pop .5s var(--spring) both;animation-delay:calc(var(--i,0) * 18ms);
+    transition:transform .25s var(--spring),background .3s}
+  .cell:active{transform:scale(.9)}
+  .cell.empty-cell{background:none;border-color:transparent;cursor:default}
+  .cell .num{font-weight:600}
+  .cell.today{box-shadow:inset 0 0 0 2px var(--b)}
+  .cell.s-clear{background:rgba(74,222,128,.14)}
+  .cell.s-kurang{background:rgba(251,146,60,.14)}
+  .badge{position:absolute;top:4px;right:5px;font-size:10px;font-weight:700;padding:1px 5px;border-radius:999px}
+  .badge.ok{background:var(--ok);color:#0c0c1c}
+  .badge.warn{background:var(--warn);color:#0c0c1c}
+  .count{font-size:11px;color:var(--muted)}
+  .legend{display:flex;gap:14px;justify-content:center;margin-top:16px;font-size:12px;color:var(--muted)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:var(--glass2)}
+  .dot.ok{background:var(--ok)}
+  .dot.warn{background:var(--warn)}
+
+  /* day sheet */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .4s;z-index:20}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-height:82dvh;overflow-y:auto;
+    border-radius:24px 24px 0 0;padding:10px 18px calc(20px + env(safe-area-inset-bottom));
+    background:rgba(20,20,40,.94);backdrop-filter:blur(20px);border:1px solid var(--line);
+    transform:translateY(105%);transition:transform .5s var(--ease)}
+  .sheet.open{transform:none}
+  .grab{width:44px;height:5px;border-radius:9px;background:var(--glass2);margin:0 auto 12px}
+  .sheet h3{font-size:18px;margin-bottom:12px}
+  .status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+  .chip{height:38px;padding:0 14px;border-radius:999px;background:var(--glass);border:1px solid var(--line);
+    cursor:pointer;transition:all .35s var(--spring)}
+  .chip:active{transform:scale(.94)}
+  .chip.on{background:linear-gradient(135deg,var(--a),var(--b));border-color:transparent}
+  .chip[data-st=clear].on{background:var(--ok);color:#0c0c1c}
+  .chip[data-st=kurang].on{background:var(--warn);color:#0c0c1c}
+  .stepper{display:flex;align-items:center;gap:8px;margin-left:auto}
+  .stepper button{width:36px;height:36px;border-radius:50%;background:var(--glass2);font-size:18px;cursor:pointer}
+  .stepper span{min-width:24px;text-align:center;font-weight:700}
+
+  /* modal */
+  .modal{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.5);
+    opacity:0;pointer-events:none;transition:opacity .35s}
+  .modal.open{opacity:1;pointer-events:auto}
+  .modal .card{width:min(440px,100%);max-height:90dvh;overflow-y:auto;padding:20px;border-radius:22px;
+    background:rgba(22,22,44,.96);border:1px solid var(--line);transform:scale(.92) translateY(10px);
+    transition:transform .45s var(--spring)}
+  .modal.open .card{transform:none}
+  .modal h3{font-size:18px}
+  .field{display:grid;gap:6px;margin-top:12px;font-size:13px;color:var(--muted)}
+  .field input{height:46px;padding:0 14px;border-radius:12px;background:var(--glass);border:1px solid var(--line);
+    color:var(--ink);font-size:16px;width:100%}
+  .field input:focus{border-color:var(--a)}
+  .field input[type=color]{height:46px;padding:4px}
+  .pw{display:flex;gap:6px;align-items:center}
+  .pw input{flex:1}
+  .preview{height:120px;border-radius:14px;overflow:hidden;display:grid;place-items:center;font-size:36px;font-weight:700;
+    background:linear-gradient(135deg,var(--c),#1b1b38);margin-top:12px}
+  .preview img{width:100%;height:100%;object-fit:cover}
+  .row{display:flex;gap:8px;align-items:center;margin-top:18px;flex-wrap:wrap}
+  .grow{flex:1}
+  .hlist{display:grid;gap:8px;margin-top:14px;max-height:50dvh;overflow:auto}
+  .hist{padding:10px 12px;border-radius:12px;background:var(--glass);display:grid;gap:2px;font-size:14px}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,30px);
+    opacity:0;padding:12px 18px;border-radius:14px;background:rgba(20,20,40,.95);border:1px solid var(--line);
+    z-index:40;transition:all .45s var(--spring);pointer-events:none;font-size:14px;max-width:90vw}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
+    .blobs{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="blobs" aria-hidden="true"><span></span><span></span><span></span></div>
+
+<div id="app">
+
+  <!-- LOCK -->
+  <section id="lock" class="screen active">
+    <div class="lock">
+      <div class="lock-ico">🔐</div>
+      <h2>Akun Game</h2>
+      <p class="muted" style="margin-top:6px;font-size:14px">Masukkan PIN 6 digit</p>
+      <div class="dots" id="dots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="pad" id="pad"></div>
+      <p class="err" id="lockErr"></p>
+    </div>
+  </section>
+
+  <!-- HOME -->
+  <section id="home" class="screen">
+    <header class="top">
+      <h1 class="grow">Akun Game</h1>
+      <div class="top-actions">
+        <button class="icon" id="btnSearch" aria-label="Cari">⌕</button>
+        <button class="icon" id="btnHist" aria-label="Riwayat dan backup">⟲</button>
+        <button class="icon" id="btnLock" aria-label="Kunci">🔒</button>
+      </div>
+    </header>
+    <div class="search" id="searchBox" hidden>
+      <input id="q" placeholder="Cari username atau catatan…" autocomplete="off">
+    </div>
+    <div id="searchRes" class="list"></div>
+    <div id="games" class="games"></div>
+    <button class="btn-primary block" id="btnAddGame">+ Tambah game</button>
+  </section>
+
+  <!-- CALENDAR -->
+  <section id="cal" class="screen">
+    <header class="top">
+      <button class="icon" id="btnBack" aria-label="Kembali">←</button>
+      <div class="top-title">
+        <h1 id="calGame">Game</h1>
+        <small class="muted" id="calMonth"></small>
+      </div>
+      <div class="top-actions">
+        <button class="icon" id="btnPrev" aria-label="Bulan sebelumnya">‹</button>
+        <button class="icon" id="btnNext" aria-label="Bulan berikutnya">›</button>
+      </div>
+    </header>
+    <div class="weekdays">
+      <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+    </div>
+    <div class="grid" id="grid" style="margin-top:6px"></div>
+    <div class="legend">
+      <span><i class="dot ok"></i>Clear</span>
+      <span><i class="dot warn"></i>Kurang</span>
+      <span><i class="dot"></i>Belum dicek</span>
+    </div>
+  </section>
+</div>
+
+<!-- DAY SHEET -->
+<div class="scrim" id="scrim"></div>
+<section class="sheet" id="daySheet" aria-label="Detail tanggal">
+  <div class="grab"></div>
+  <h3 id="dayTitle"></h3>
+  <div class="status">
+    <button class="chip" data-st="clear">✓ Clear</button>
+    <button class="chip" data-st="kurang">Kurang</button>
+    <button class="chip" data-st="">Belum</button>
+    <div class="stepper" id="stepper" hidden>
+      <button id="mMinus" aria-label="Kurang satu">−</button>
+      <span id="missing">1</span>
+      <button id="mPlus" aria-label="Tambah satu">+</button>
+      <small class="muted">akun</small>
+    </div>
+  </div>
+  <div class="list" id="dayAccounts"></div>
+  <button class="btn-primary block" id="btnAddAcc">+ Tambah akun</button>
+</section>
+
+<!-- ACCOUNT MODAL -->
+<div class="modal" id="accModal">
+  <div class="card">
+    <h3 id="accTitle">Akun baru</h3>
+    <label class="field">Username / ID
+      <input id="fUser" autocomplete="off" maxlength="120">
+    </label>
+    <label class="field">Password
+      <div class="pw">
+        <input id="fPass" type="password" autocomplete="off" maxlength="200">
+        <button type="button" class="icon small" id="btnEye" aria-label="Tampilkan password">👁</button>
+      </div>
+    </label>
+    <label class="field">Catatan
+      <input id="fNote" maxlength="200" placeholder="mis. sudah ganti email">
+    </label>
+    <label class="field">Tanggal
+      <input id="fDate" type="date">
+    </label>
+    <div class="row">
+      <button class="btn-ghost danger" id="btnDelAcc">Hapus</button>
+      <span class="grow"></span>
+      <button class="btn-ghost" id="btnCancelAcc">Batal</button>
+      <button class="btn-primary" id="btnSaveAcc">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- GAME MODAL -->
+<div class="modal" id="gameModal">
+  <div class="card">
+    <h3 id="gTitle">Game baru</h3>
+    <label class="field">Nama game
+      <input id="gName" maxlength="80">
+    </label>
+    <label class="field">URL gambar (opsional)
+      <input id="gImg" type="url" placeholder="https://…/gambar.jpg" maxlength="500">
+    </label>
+    <label class="field">Warna
+      <input id="gColor" type="color" value="#7c5cff">
+    </label>
+    <div class="preview" id="gPrev"></div>
+    <div class="row">
+      <span class="grow"></span>
+      <button class="btn-ghost" id="btnCancelGame">Batal</button>
+      <button class="btn-primary" id="btnSaveGame">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY & BACKUP MODAL -->
+<div class="modal" id="histModal">
+  <div class="card">
+    <h3>Riwayat & backup</h3>
+    <div class="row">
+      <button class="btn-ghost" id="btnExport">⬇ Backup (JSON)</button>
+      <label class="btn-ghost" style="cursor:pointer">⬆ Restore
+        <input id="fileImport" type="file" accept="application/json" hidden>
+      </label>
+    </div>
+    <div class="hlist" id="histList"></div>
+    <div class="row">
+      <span class="grow"></span>
+      <button class="btn-ghost" id="btnCloseHist">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  // GANTI dengan URL Web app dari Apps Script (berakhiran /exec)
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzPsh7e9HYzjAHO2xawDY4z-65VVoW-4SxlfAClzo5FITmtSnylLaIrPDT0dSBUGUDZ3w/exec';
+
+  const $ = (s) => document.querySelector(s);
+  const pad = (n) => String(n).padStart(2, '0');
+  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const nowIso = () => new Date().toISOString();
+
+  const S = {
+    pin: '', pinBuf: '',
+    games: [], accounts: [], days: [], history: [],
+    gameId: null, month: new Date(), day: null,
+  };
+  let editingAcc = null;
+  let editingGame = null;
+
+  function mk(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function initials(name) {
+    return (name || '?').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+
+  // ---------- API ----------
+  async function api(action, payload = {}) {
+    let res;
+    try {
+      res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ pin: S.pin, action, ...payload }),
+      });
+    } catch (_) {
+      throw new Error('Tidak bisa terhubung ke server');
+    }
+    let data;
+    try { data = await res.json(); }
+    catch (_) { throw new Error('Respons server tidak valid, cek akses deployment'); }
+    if (!data.ok) throw new Error(data.error || 'Gagal');
+    return data;
+  }
+
+  // Ubah tampilan dulu, kirim ke Sheet di belakang. Kalau gagal, muat ulang dari Sheet.
+  async function send(action, payload, label) {
+    try {
+      await api(action, payload);
+      if (label) toast(label);
+    } catch (e) {
+      toast('Gagal menyimpan: ' + e.message);
+      await loadAll();
+    }
+  }
+
+  async function loadAll() {
+    const d = await api('load');
+    S.games = d.games; S.accounts = d.accounts; S.days = d.days; S.history = d.history;
+    renderHome();
+    if (S.gameId) renderCal();
+  }
+
+  // ---------- Layar ----------
+  const ORDER = ['lock', 'home', 'cal'];
+  function go(id) {
+    const cur = document.querySelector('.screen.active');
+    const next = document.getElementById(id);
+    if (cur === next) return;
+    const forward = !cur || ORDER.indexOf(id) > ORDER.indexOf(cur.id);
+    if (cur) { cur.classList.remove('active'); cur.classList.toggle('exit-left', forward); }
+    next.classList.remove('exit-left');
+    next.classList.toggle('from-left', !forward);
+    requestAnimationFrame(() => requestAnimationFrame(() => next.classList.add('active')));
+  }
+
+  // ---------- PIN ----------
+  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  function buildPad() {
+    const box = $('#pad');
+    KEYS.forEach((k) => {
+      const b = mk('button', k ? '' : 'ghost', k);
+      if (k === '⌫') b.onclick = () => press('del');
+      else if (k) b.onclick = () => press(k);
+      else b.disabled = true;
+      box.appendChild(b);
+    });
+  }
+  function paintDots() {
+    [...$('#dots').children].forEach((d, i) => d.classList.toggle('on', i < S.pinBuf.length));
+  }
+  function press(k) {
+    if (k === 'del') S.pinBuf = S.pinBuf.slice(0, -1);
+    else if (S.pinBuf.length < 6) S.pinBuf += k;
+    paintDots();
+    if (S.pinBuf.length === 6) tryUnlock();
+  }
+  async function tryUnlock() {
+    S.pin = S.pinBuf;
+    try {
+      await api('login');
+    } catch (e) {
+      S.pin = ''; S.pinBuf = ''; paintDots();
+      $('#dots').classList.add('shake');
+      setTimeout(() => $('#dots').classList.remove('shake'), 500);
+      $('#lockErr').textContent = e.message;
+      return;
+    }
+    S.pinBuf = ''; paintDots(); $('#lockErr').textContent = '';
+    try {
+      await loadAll();
+      go('home');
+    } catch (e) {
+      S.pin = ''; $('#lockErr').textContent = e.message;
+    }
+  }
+  document.addEventListener('keydown', (e) => {
+    if (!$('#lock').classList.contains('active')) return;
+    if (/^\d$/.test(e.key)) press(e.key);
+    else if (e.key === 'Backspace') press('del');
+  });
+
+  $('#btnLock').onclick = () => {
+    S.pin = ''; S.gameId = null; S.games = []; S.accounts = []; S.days = []; S.history = [];
+    closeDay(); closeModals();
+    document.documentElement.style.setProperty('--tint', '#7c5cff');
+    go('lock');
+  };
+
+  // ---------- Home ----------
+  function renderHome() {
+    const box = $('#games');
+    box.textContent = '';
+    if (!S.games.length) {
+      box.appendChild(mk('p', 'empty muted', 'Belum ada game. Tambah dulu di bawah.'));
+      return;
+    }
+    S.games.forEach((g, i) => {
+      const count = S.accounts.filter((a) => a.game_id === g.id).length;
+      const card = mk('button', 'game');
+      card.style.setProperty('--i', i);
+      card.style.setProperty('--c', g.color || '#7c5cff');
+
+      const th = mk('div', 'thumb');
+      if (g.image_url) {
+        const img = mk('img');
+        img.src = g.image_url;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.referrerPolicy = 'no-referrer';
+        img.onerror = () => { img.remove(); th.textContent = initials(g.name); };
+        th.appendChild(img);
+      } else {
+        th.textContent = initials(g.name);
+      }
+
+      const edit = mk('button', 'edit', '✎');
+      edit.setAttribute('aria-label', 'Edit game');
+      edit.onclick = (e) => { e.stopPropagation(); openGameModal(g); };
+
+      card.append(th, mk('div', 'gname', g.name), mk('small', 'muted', count + ' akun'), edit);
+      card.onclick = () => openGame(g.id);
+      box.appendChild(card);
+    });
+  }
+
+  function openGame(id) {
+    const g = S.games.find((x) => x.id === id);
+    if (!g) return;
+    S.gameId = id;
+    S.month = new Date();
+    document.documentElement.style.setProperty('--tint', g.color || '#7c5cff');
+    renderCal();
+    go('cal');
+  }
+
+  // ---------- Search ----------
+  $('#btnSearch').onclick = () => {
+    const box = $('#searchBox');
+    box.hidden = !box.hidden;
+    if (!box.hidden) $('#q').focus();
+    else { $('#q').value = ''; $('#searchRes').textContent = ''; }
+  };
+  $('#q').oninput = renderSearch;
+  function renderSearch() {
+    const q = $('#q').value.trim().toLowerCase();
+    const box = $('#searchRes');
+    box.textContent = '';
+    if (!q) return;
+    S.accounts
+      .filter((a) => (a.username + ' ' + a.note).toLowerCase().includes(q))
+      .slice(0, 50)
+      .forEach((a, i) => {
+        const g = S.games.find((x) => x.id === a.game_id);
+        const row = mk('button', 'acc');
+        row.style.setProperty('--i', i);
+        const main = mk('div', 'acc-main');
+        main.append(
+          mk('b', '', a.username || '(tanpa nama)'),
+          mk('small', '', [g ? g.name : '', a.date, a.note].filter(Boolean).join(' · '))
+        );
+        row.appendChild(main);
+        row.onclick = () => {
+          S.gameId = a.game_id;
+          S.month = new Date(a.date + 'T00:00:00');
+          document.documentElement.style.setProperty('--tint', g && g.color ? g.color : '#7c5cff');
+          renderCal();
+          go('cal');
+          openDay(a.date);
+        };
+        box.appendChild(row);
+      });
+  }
+
+  // ---------- Kalender ----------
+  function renderCal() {
+    const g = S.games.find((x) => x.id === S.gameId);
+    if (!g) return;
+    $('#calGame').textContent = g.name;
+    const m = S.month;
+    const y = m.getFullYear(), mo = m.getMonth();
+    $('#calMonth').textContent = m.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+    const grid = $('#grid');
+    grid.textContent = '';
+    const offset = (new Date(y, mo, 1).getDay() + 6) % 7; // Senin = 0
+    const total = new Date(y, mo + 1, 0).getDate();
+    const todayKey = ymd(new Date());
+
+    for (let i = 0; i < offset; i++) grid.appendChild(mk('div', 'cell empty-cell'));
+
+    for (let d = 1; d <= total; d++) {
+      const key = `${y}-${pad(mo + 1)}-${pad(d)}`;
+      const cnt = S.accounts.filter((a) => a.game_id === g.id && a.date === key).length;
+      const st = S.days.find((x) => x.id === g.id + '|' + key);
+      const status = st ? st.status : '';
+
+      const cell = mk('button', 'cell' + (key === todayKey ? ' today' : '') + (status ? ' s-' + status : ''));
+      cell.style.setProperty('--i', d);
+      cell.appendChild(mk('span', 'num', String(d)));
+      if (status === 'clear') cell.appendChild(mk('span', 'badge ok', '✓'));
+      if (status === 'kurang') cell.appendChild(mk('span', 'badge warn', '−' + (Number(st.missing) || 1)));
+      if (cnt) cell.appendChild(mk('span', 'count', cnt + ' akun'));
+      cell.onclick = () => openDay(key);
+      grid.appendChild(cell);
+    }
+  }
+  $('#btnPrev').onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() - 1, 1); renderCal(); };
+  $('#btnNext').onclick = () => { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + 1, 1); renderCal(); };
+  $('#btnBack').onclick = () => {
+    S.gameId = null;
+    document.documentElement.style.setProperty('--tint', '#7c5cff');
+    closeDay();
+    renderHome();
+    go('home');
+  };
+
+  // ---------- Bottom sheet tanggal ----------
+  function openDay(key) {
+    S.day = key;
+    $('#dayTitle').textContent = new Date(key + 'T00:00:00')
+      .toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+    renderDay();
+    $('#daySheet').classList.add('open');
+    $('#scrim').classList.add('open');
+  }
+  function closeDay() {
+    $('#daySheet').classList.remove('open');
+    $('#scrim').classList.remove('open');
+  }
+  $('#scrim').onclick = () => { closeDay(); closeModals(); };
+
+  function dayState() {
+    return S.days.find((x) => x.id === S.gameId + '|' + S.day) || { status: '', missing: '1' };
+  }
+  function renderDay() {
+    const st = dayState();
+    document.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.st === (st.status || '')));
+    $('#stepper').hidden = st.status !== 'kurang';
+    $('#missing').textContent = Number(st.missing) || 1;
+
+    const list = $('#dayAccounts');
+    list.textContent = '';
+    const accs = S.accounts.filter((a) => a.game_id === S.gameId && a.date === S.day);
+    if (!accs.length) list.appendChild(mk('p', 'muted', 'Belum ada akun di tanggal ini.'));
+    accs.forEach((a, i) => {
+      const row = mk('div', 'acc');
+      row.style.setProperty('--i', i);
+      const main = mk('button', 'acc-main');
+      main.append(mk('b', '', a.username || '(tanpa nama)'));
+      if (a.note) main.append(mk('small', '', a.note));
+      main.onclick = () => openAcc(a);
+      const copyU = mk('button', 'icon small', '⧉');
+      copyU.setAttribute('aria-label', 'Salin username');
+      copyU.onclick = () => copy(a.username, 'Username disalin');
+      const copyP = mk('button', 'icon small', '🔑');
+      copyP.setAttribute('aria-label', 'Salin password');
+      copyP.onclick = () => copy(a.password, 'Password disalin');
+      row.append(main, copyU, copyP);
+      list.appendChild(row);
+    });
+  }
+
+  function setDay(status, missing) {
+    const id = S.gameId + '|' + S.day;
+    const cur = dayState();
+    const m = status === 'kurang' ? String(missing ?? (Number(cur.missing) || 1)) : '';
+    const item = { id, game_id: S.gameId, date: S.day, status, missing: m, updated_at: nowIso() };
+    S.days = S.days.filter((x) => x.id !== id);
+    if (status) S.days.push(item);
+    renderDay();
+    renderCal();
+    send('saveDay', { item });
+  }
+  document.querySelectorAll('.chip').forEach((c) => {
+    c.onclick = () => setDay(c.dataset.st, null);
+  });
+  $('#mMinus').onclick = () => setDay('kurang', Math.max(1, (Number(dayState().missing) || 1) - 1));
+  $('#mPlus').onclick = () => setDay('kurang', (Number(dayState().missing) || 1) + 1);
+
+  // ---------- Akun ----------
+  function openAcc(a) {
+    editingAcc = a || null;
+    $('#accTitle').textContent = a ? 'Edit akun' : 'Akun baru';
+    $('#fUser').value = a ? a.username : '';
+    $('#fPass').value = a ? a.password : '';
+    $('#fPass').type = 'password';
+    $('#fNote').value = a ? a.note : '';
+    $('#fDate').value = a ? a.date : S.day;
+    $('#btnDelAcc').hidden = !a;
+    $('#accModal').classList.add('open');
+    setTimeout(() => $('#fUser').focus(), 300);
+  }
+  $('#btnAddAcc').onclick = () => openAcc(null);
+  $('#btnEye').onclick = () => {
+    const p = $('#fPass');
+    p.type = p.type === 'password' ? 'text' : 'password';
+  };
+  $('#btnCancelAcc').onclick = closeModals;
+
+  $('#btnSaveAcc').onclick = () => {
+    const username = $('#fUser').value.trim();
+    if (!username) { toast('Username wajib diisi'); return; }
+    const date = $('#fDate').value || S.day;
+    const now = nowIso();
+    const item = {
+      id: editingAcc ? editingAcc.id : uid(),
+      game_id: S.gameId,
+      date,
+      username,
+      password: $('#fPass').value,
+      note: $('#fNote').value.trim(),
+      created_at: editingAcc ? editingAcc.created_at : now,
+      updated_at: now,
+    };
+    S.accounts = S.accounts.filter((x) => x.id !== item.id).concat(item);
+    S.day = date;
+    closeModals();
+    renderCal();
+    renderDay();
+    renderHome();
+    send('saveAccount', { item }, 'Akun tersimpan');
+  };
+
+  $('#btnDelAcc').onclick = () => {
+    if (!editingAcc) return;
+    if (!confirm('Hapus akun "' + editingAcc.username + '"?')) return;
+    const id = editingAcc.id, name = editingAcc.username;
+    S.accounts = S.accounts.filter((x) => x.id !== id);
+    closeModals();
+    renderCal();
+    renderDay();
+    renderHome();
+    send('deleteAccount', { id, name }, 'Akun dihapus');
+  };
+
+  // ---------- Game ----------
+  function openGameModal(g) {
+    editingGame = g || null;
+    $('#gTitle').textContent = g ? 'Edit game' : 'Game baru';
+    $('#gName').value = g ? g.name : '';
+    $('#gImg').value = g ? g.image_url : '';
+    $('#gColor').value = (g && g.color) || '#7c5cff';
+    updGamePrev();
+    $('#gameModal').classList.add('open');
+  }
+  function updGamePrev() {
+    const url = $('#gImg').value.trim();
+    const p = $('#gPrev');
+    p.textContent = '';
+    if (url) {
+      const img = mk('img');
+      img.src = url;
+      img.referrerPolicy = 'no-referrer';
+      img.onerror = () => { img.remove(); p.textContent = 'Gambar tidak bisa dimuat'; };
+      p.appendChild(img);
+    } else {
+      p.textContent = initials($('#gName').value);
+    }
+    p.style.background = `linear-gradient(135deg, ${$('#gColor').value}, #1b1b38)`;
+  }
+  $('#gImg').oninput = updGamePrev;
+  $('#gName').oninput = () => { if (!$('#gImg').value.trim()) updGamePrev(); };
+  $('#gColor').oninput = updGamePrev;
+  $('#btnAddGame').onclick = () => openGameModal(null);
+  $('#btnCancelGame').onclick = closeModals;
+  $('#btnSaveGame').onclick = () => {
+    const name = $('#gName').value.trim();
+    if (!name) { toast('Nama game wajib diisi'); return; }
+    const item = {
+      id: editingGame ? editingGame.id : uid(),
+      name,
+      image_url: $('#gImg').value.trim(),
+      color: $('#gColor').value,
+      created_at: editingGame ? editingGame.created_at : nowIso(),
+    };
+    S.games = S.games.filter((x) => x.id !== item.id).concat(item);
+    closeModals();
+    renderHome();
+    send('saveGame', { item }, 'Game tersimpan');
+  };
+
+  // ---------- Riwayat & backup ----------
+  $('#btnHist').onclick = () => { renderHist(); $('#histModal').classList.add('open'); };
+  $('#btnCloseHist').onclick = closeModals;
+  function renderHist() {
+    const box = $('#histList');
+    box.textContent = '';
+    if (!S.history.length) { box.appendChild(mk('p', 'muted', 'Belum ada riwayat.')); return; }
+    S.history.slice(0, 200).forEach((h) => {
+      const r = mk('div', 'hist');
+      const when = new Date(h.at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+      r.append(mk('small', 'muted', when), mk('div', '', h.action + (h.target ? ' · ' + h.target : '')));
+      box.appendChild(r);
+    });
+  }
+  $('#btnExport').onclick = async () => {
+    try {
+      const d = await api('export');
+      const blob = new Blob(
+        [JSON.stringify({ version: 1, exported_at: nowIso(), ...d.data }, null, 2)],
+        { type: 'application/json' }
+      );
+      const a = mk('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'akun-game-backup-' + ymd(new Date()) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      toast('Backup diunduh');
+    } catch (e) { toast(e.message); }
+  };
+  $('#fileImport').onchange = async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    let data;
+    try {
+      data = JSON.parse(await f.text());
+      if (!Array.isArray(data.accounts)) throw new Error('format');
+    } catch (_) { toast('File backup tidak valid'); return; }
+    if (!confirm('Restore akan MENGGANTI semua data sekarang. Lanjut?')) return;
+    try {
+      await api('import', { data });
+      toast('Restore selesai');
+      await loadAll();
+    } catch (err) { toast(err.message); }
+  };
+
+  // ---------- Util ----------
+  function closeModals() {
+    document.querySelectorAll('.modal').forEach((m) => m.classList.remove('open'));
+  }
+  function copy(text, msg) {
+    if (!text) { toast('Kosong'); return; }
+    const fallback = () => {
+      const t = mk('textarea');
+      t.value = text;
+      document.body.appendChild(t);
+      t.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      t.remove();
+      toast(msg);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => toast(msg)).catch(fallback);
+    } else {
+      fallback();
+    }
+  }
+  let toastTimer;
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  buildPad();
+})();
+</script>
+</body>
+</html>
